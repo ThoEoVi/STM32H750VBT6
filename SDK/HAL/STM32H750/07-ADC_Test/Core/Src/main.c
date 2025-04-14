@@ -202,11 +202,11 @@ int main(void)
 		HAL_ADC_Stop(&hadc3);
 		
 		#define V30  (620)  // mV, V30: 0.62V,datasheet P278
-		#define Avg_Slope (2) // mV/¡ãC
+		#define Avg_Slope (2) // mV/ï¿½ï¿½C
 		
 		adc3_inp0  = uhADCxInputVoltage[0]; // mv
 		vrefint    = uhADCxInputVoltage[1]; // type. 1200mV
-		tempsensor = ((int32_t)uhADCxInputVoltage[2] - V30)/Avg_Slope + 30; // ¡ãC
+		tempsensor = ((int32_t)uhADCxInputVoltage[2] - V30)/Avg_Slope + 30; // ï¿½ï¿½C
 		vbat       = uhADCxInputVoltage[3] * 4; 
 		
 		uint8_t text[30];
