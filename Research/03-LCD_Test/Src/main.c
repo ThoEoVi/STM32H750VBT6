@@ -20,6 +20,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "rtc.h"
+#include "sdmmc.h"
 #include "spi.h"
 #include "tim.h"
 #include "gpio.h"
@@ -167,6 +168,7 @@ int main(void)
   MX_RTC_Init();
   MX_SPI4_Init();
   MX_TIM1_Init();
+  MX_SDMMC1_SD_Init();
   /* USER CODE BEGIN 2 */
 //	HAL_TIMEx_PWMN_Start(&htim1,TIM_CHANNEL_2);
 //	__HAL_TIM_SetCompare(&htim1,TIM_CHANNEL_2,10);
