@@ -19,15 +19,16 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "rtc.h"
 #include "sdmmc.h"
-#include "spi.h"
-#include "tim.h"
+#include "usb_device.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+// #include <stdio.h>
 #include "lcd.h"
+#include "usbd_cdc_if.h"
+#include "Data_if.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -58,53 +59,6 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-static void MPU_Config(void)
-{
-  MPU_Region_InitTypeDef MPU_InitStruct = {0};
-
-  /* Disables the MPU */
-  HAL_MPU_Disable();
-	
-	/* Configure the MPU attributes for the QSPI 256MB without instruction access */
-  MPU_InitStruct.Enable           = MPU_REGION_ENABLE;
-  MPU_InitStruct.Number           = MPU_REGION_NUMBER0;
-  MPU_InitStruct.BaseAddress      = QSPI_BASE;
-  MPU_InitStruct.Size             = MPU_REGION_SIZE_256MB;
-  MPU_InitStruct.AccessPermission = MPU_REGION_NO_ACCESS;
-  MPU_InitStruct.IsBufferable     = MPU_ACCESS_NOT_BUFFERABLE;
-  MPU_InitStruct.IsCacheable      = MPU_ACCESS_NOT_CACHEABLE;
-  MPU_InitStruct.IsShareable      = MPU_ACCESS_NOT_SHAREABLE;
-  MPU_InitStruct.DisableExec      = MPU_INSTRUCTION_ACCESS_DISABLE;
-  MPU_InitStruct.TypeExtField     = MPU_TEX_LEVEL1;
-  MPU_InitStruct.SubRegionDisable = 0x00;
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-	
-  /* Configure the MPU attributes for the QSPI 8MB (QSPI Flash Size) to Cacheable WT */
-  MPU_InitStruct.Enable           = MPU_REGION_ENABLE;
-  MPU_InitStruct.Number           = MPU_REGION_NUMBER1;
-  MPU_InitStruct.BaseAddress      = QSPI_BASE;
-  MPU_InitStruct.Size             = MPU_REGION_SIZE_8MB;
-  MPU_InitStruct.AccessPermission = MPU_REGION_PRIV_RO;
-  MPU_InitStruct.IsBufferable     = MPU_ACCESS_BUFFERABLE;
-  MPU_InitStruct.IsCacheable      = MPU_ACCESS_CACHEABLE;
-  MPU_InitStruct.IsShareable      = MPU_ACCESS_NOT_SHAREABLE;
-  MPU_InitStruct.DisableExec      = MPU_INSTRUCTION_ACCESS_ENABLE;
-  MPU_InitStruct.TypeExtField     = MPU_TEX_LEVEL1;
-  MPU_InitStruct.SubRegionDisable = 0x00;
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-	
-  /* Enables the MPU */
-  HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
-}
-
-static void CPU_CACHE_Enable(void)
-{
-  /* Enable I-Cache */
-  SCB_EnableICache();
-
-  /* Enable D-Cache */
-  SCB_EnableDCache();
-}
 
 static void LED_Blink(uint32_t Hdelay,uint32_t Ldelay)
 {
@@ -114,20 +68,7 @@ static void LED_Blink(uint32_t Hdelay,uint32_t Ldelay)
 	HAL_Delay(Ldelay-1);
 }
 
-/**
-  * @brief  Get the current time and date.
-  * @param  
-  * @retval None
-  */
-static void RTC_CalendarShow(RTC_DateTypeDef *sdatestructureget,RTC_TimeTypeDef *stimestructureget)
-{
-  /* ����ͬʱ��ȡʱ������� ��Ȼ�ᵼ���´�RTC���ܶ�ȡ */
-  /* Both time and date must be obtained or RTC cannot be read next time */
-  /* Get the RTC current Time */
-  HAL_RTC_GetTime(&hrtc, stimestructureget, RTC_FORMAT_BIN);
-  /* Get the RTC current Date */
-  HAL_RTC_GetDate(&hrtc, sdatestructureget, RTC_FORMAT_BIN);
-}
+
 
 /* USER CODE END 0 */
 
@@ -138,13 +79,7 @@ static void RTC_CalendarShow(RTC_DateTypeDef *sdatestructureget,RTC_TimeTypeDef 
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	
-  #ifdef W25Qxx
-    SCB->VTOR = QSPI_BASE;
-  #endif
-  MPU_Config();
-  CPU_CACHE_Enable();
-	
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -165,39 +100,29 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_RTC_Init();
-  MX_SPI4_Init();
-  MX_TIM1_Init();
   MX_SDMMC1_SD_Init();
+  MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-//	HAL_TIMEx_PWMN_Start(&htim1,TIM_CHANNEL_2);
-//	__HAL_TIM_SetCompare(&htim1,TIM_CHANNEL_2,10);
-	LCD_Test();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-	uint8_t text[20];
-	RTC_DateTypeDef sdatestructureget;
-	RTC_TimeTypeDef stimestructureget;
+
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		RTC_CalendarShow(&sdatestructureget,&stimestructureget);
-		
-		if (stimestructureget.Seconds % 2 == 1)
-			sprintf((char *)&text,"Time: %02d:%02d", stimestructureget.Hours, stimestructureget.Minutes);
-		else
-			sprintf((char *)&text,"Time: %02d %02d", stimestructureget.Hours, stimestructureget.Minutes);
-		LCD_ShowString(4, 58, 160, 16, 16, text);
-		
-		sprintf((char *)&text,"Tick: %d ms",HAL_GetTick());
-		LCD_ShowString(4, 74, 160, 16, 16,text);
-		
-		LED_Blink(3,500);
-		
+
+    uint8_t u1a_Data[255U];
+    for (uint16_t i = 0; i < U1L_DATA_f32_1kHz_15kHz_LENGTH; i++)
+    {
+      sprintf( (char*)u1a_Data, "%f\r\n", inputSignal_f32_1kHz_15kHz[i] );
+      (void)CDC_Transmit_FS(u1a_Data, 30U);
+      HAL_Delay(5);
+    }
+
   }
   /* USER CODE END 3 */
 }
@@ -226,17 +151,12 @@ void SystemClock_Config(void)
 
   while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
 
-  /** Configure LSE Drive Capability
-  */
-  HAL_PWR_EnableBkUpAccess();
-  __HAL_RCC_LSEDRIVE_CONFIG(RCC_LSEDRIVE_MEDIUMHIGH);
-
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE|RCC_OSCILLATORTYPE_LSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.LSEState = RCC_LSE_ON;
+  RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 5;
