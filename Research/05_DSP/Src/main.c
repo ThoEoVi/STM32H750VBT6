@@ -29,6 +29,8 @@
 #include "lcd.h"
 #include "usbd_cdc_if.h"
 #include "Data_if.h"
+#include <stdio.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -116,11 +118,19 @@ int main(void)
     /* USER CODE BEGIN 3 */
 
     uint8_t u1a_Data[255U];
+    uint8_t u1a_Data_1[255U];
     for (uint16_t i = 0; i < U1L_DATA_f32_1kHz_15kHz_LENGTH; i++)
     {
-      sprintf( (char*)u1a_Data, "%f\r\n", inputSignal_f32_1kHz_15kHz[i] );
-      (void)CDC_Transmit_FS(u1a_Data, 30U);
-      HAL_Delay(5);
+      for (uint16_t j = 0; j < 255U; j++)
+      {
+        u1a_Data[j] = '\0';
+        u1a_Data_1[j] = '\0';
+      }
+      sprintf( (char*)u1a_Data, "%.2f,", inputSignal_f32_1kHz_15kHz[i] );
+      (void)CDC_Transmit_FS(u1a_Data, strlen((char*)u1a_Data));
+      sprintf( (char*)u1a_Data_1, "%.2f\r\n", inputSignal_f32_1kHz_15kHz[i]+10.0f );
+      (void)CDC_Transmit_FS(u1a_Data_1, strlen((char*)u1a_Data)+2);
+      HAL_Delay(10);
     }
 
   }
