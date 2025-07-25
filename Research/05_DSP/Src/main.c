@@ -25,12 +25,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-// #include <stdio.h>
 #include "lcd.h"
-#include "usbd_cdc_if.h"
+#include "Dsp_if.h"
 #include "Data_if.h"
-#include <stdio.h>
-#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -50,7 +47,10 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+static volatile float f4l_Main_Mean;
+static volatile float f4l_Main_Variance;
+static volatile float f4l_Main_StandardDeviation;
+static volatile float f4l_Main_ArmStandardDeviation;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -64,13 +64,11 @@ void SystemClock_Config(void);
 
 static void LED_Blink(uint32_t Hdelay,uint32_t Ldelay)
 {
-	HAL_GPIO_WritePin(E3_GPIO_Port,E3_Pin,GPIO_PIN_SET);
-	HAL_Delay(Hdelay - 1);
-	HAL_GPIO_WritePin(E3_GPIO_Port,E3_Pin,GPIO_PIN_RESET);
-	HAL_Delay(Ldelay-1);
+  HAL_GPIO_WritePin(E3_GPIO_Port,E3_Pin,GPIO_PIN_SET);
+  HAL_Delay(Hdelay - 1);
+  HAL_GPIO_WritePin(E3_GPIO_Port,E3_Pin,GPIO_PIN_RESET);
+  HAL_Delay(Ldelay-1);
 }
-
-
 
 /* USER CODE END 0 */
 
@@ -105,6 +103,23 @@ int main(void)
   MX_SDMMC1_SD_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
+  vog_Dsp_CalSignalMean( &inputSignal_f32_1kHz_15kHz[0],
+                         U1L_DATA_f32_1kHz_15kHz_LENGTH,
+                         (float*)&f4l_Main_Mean );
+
+  vog_Dsp_CalVariance( &inputSignal_f32_1kHz_15kHz[0],
+                        U1L_DATA_f32_1kHz_15kHz_LENGTH,
+                        f4l_Main_Mean,
+                        (float*)&f4l_Main_Variance );
+
+  vog_Dsp_CalStandardDeviation( &inputSignal_f32_1kHz_15kHz[0],
+                                U1L_DATA_f32_1kHz_15kHz_LENGTH,
+                                f4l_Main_Mean,
+                                (float*)&f4l_Main_StandardDeviation );
+
+  arm_std_f32( &inputSignal_f32_1kHz_15kHz[0],
+               U1L_DATA_f32_1kHz_15kHz_LENGTH,
+               (float*)&f4l_Main_ArmStandardDeviation );
 
   /* USER CODE END 2 */
 
@@ -116,22 +131,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
-    uint8_t u1a_Data[255U];
-    uint8_t u1a_Data_1[255U];
-    for (uint16_t i = 0; i < U1L_DATA_f32_1kHz_15kHz_LENGTH; i++)
-    {
-      for (uint16_t j = 0; j < 255U; j++)
-      {
-        u1a_Data[j] = '\0';
-        u1a_Data_1[j] = '\0';
-      }
-      sprintf( (char*)u1a_Data, "%.2f,", inputSignal_f32_1kHz_15kHz[i] );
-      (void)CDC_Transmit_FS(u1a_Data, strlen((char*)u1a_Data));
-      sprintf( (char*)u1a_Data_1, "%.2f\r\n", inputSignal_f32_1kHz_15kHz[i]+10.0f );
-      (void)CDC_Transmit_FS(u1a_Data_1, strlen((char*)u1a_Data)+2);
-      HAL_Delay(10);
-    }
 
   }
   /* USER CODE END 3 */
