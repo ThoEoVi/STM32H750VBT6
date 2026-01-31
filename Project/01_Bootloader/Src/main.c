@@ -20,7 +20,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "rtc.h"
-#include "sdmmc.h"
 #include "spi.h"
 #include "tim.h"
 #include "gpio.h"
@@ -168,7 +167,6 @@ int main(void)
   MX_RTC_Init();
   MX_SPI4_Init();
   MX_TIM1_Init();
-  MX_SDMMC1_SD_Init();
   /* USER CODE BEGIN 2 */
 //	HAL_TIMEx_PWMN_Start(&htim1,TIM_CHANNEL_2);
 //	__HAL_TIM_SetCompare(&htim1,TIM_CHANNEL_2,10);
@@ -177,9 +175,16 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-	uint8_t text[20];
+	uint8_t text[20] = "Hello World";
 	RTC_DateTypeDef sdatestructureget;
 	RTC_TimeTypeDef stimestructureget;
+
+  static volatile uint8_t u1a_X = 4U;
+  static volatile uint8_t u1a_Y = 58U;
+  static volatile uint8_t u1a_Width = 160U;
+  static volatile uint8_t u1a_Heigh = 16U;
+  static volatile uint8_t u1a_Size = 16U;
+  static volatile uint8_t u1a_ClearFlag = 0U;
   while (1)
   {
     /* USER CODE END WHILE */
@@ -187,15 +192,24 @@ int main(void)
     /* USER CODE BEGIN 3 */
 		RTC_CalendarShow(&sdatestructureget,&stimestructureget);
 		
-		if (stimestructureget.Seconds % 2 == 1)
-			sprintf((char *)&text,"Time: %02d:%02d", stimestructureget.Hours, stimestructureget.Minutes);
-		else
-			sprintf((char *)&text,"Time: %02d %02d", stimestructureget.Hours, stimestructureget.Minutes);
-		LCD_ShowString(4, 58, 160, 16, 16, text);
+		// if (stimestructureget.Seconds % 2 == 1)
+		// 	sprintf((char *)&text,"Time: %02d:%02d", stimestructureget.Hours, stimestructureget.Minutes);
+		// else
+		// 	sprintf((char *)&text,"Time: %02d %02d", stimestructureget.Hours, stimestructureget.Minutes);
+		// LCD_ShowString(4, 58, 160, 16, 16, text);
 		
-		sprintf((char *)&text,"Tick: %d ms",HAL_GetTick());
-		LCD_ShowString(4, 74, 160, 16, 16,text);
-		
+		// sprintf((char *)&text,"Tick: %d ms",HAL_GetTick());
+		// LCD_ShowString(4, 74, 160, 16, 16,text);
+
+    if ( 1U == u1a_ClearFlag )
+    {
+      u1a_ClearFlag = 0U;
+      ST7735_LCD_Driver.FillRect(&st7735_pObj, u1a_X, u1a_Y, u1a_Width,u1a_Heigh, BLACK);
+    }
+
+    LCD_ShowString(u1a_X, u1a_Y, u1a_Width, u1a_Heigh, u1a_Size,text);
+
+
 		LED_Blink(3,500);
 		
   }
